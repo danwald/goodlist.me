@@ -1,3 +1,42 @@
+/**
+ * @swagger
+ * /api/items/{itemId}:
+ *   delete:
+ *     summary: Delete an item
+ *     tags: [Items]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the item to delete
+ *     responses:
+ *       200:
+ *         description: Item deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Item not found or not owned by user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { getItemRepository, getListRepository } from "@/infrastructure/db"

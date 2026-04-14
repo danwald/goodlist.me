@@ -1,3 +1,62 @@
+/**
+ * @swagger
+ * /api/lists/{listId}/items:
+ *   post:
+ *     summary: Add an item to a list
+ *     tags: [Items]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: listId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the list to add the item to
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 2000
+ *                 example: The Pragmatic Programmer
+ *               url:
+ *                 type: string
+ *                 format: uri
+ *                 maxLength: 2000
+ *                 example: https://pragprog.com
+ *     responses:
+ *       201:
+ *         description: Item created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Item'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: List not found or not owned by user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
