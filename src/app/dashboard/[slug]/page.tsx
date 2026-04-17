@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { getListRepository } from "@/infrastructure/db"
 import { AddItemForm } from "./add-item-form"
 import { ItemRow } from "./item-row"
+import { ShareButton } from "@/components/share-button"
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -29,12 +30,17 @@ export default async function ListDetailPage({ params }: Props) {
           >
             &larr; Back
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{list.title}</h1>
             {list.description && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">{list.description}</p>
             )}
           </div>
+          {list.isPublic && (
+            <ShareButton
+              url={`${process.env.NEXTAUTH_URL}/list/${list.id}`}
+            />
+          )}
         </div>
       </header>
 
