@@ -60,6 +60,13 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// AIDEV-NOTE: favicon cache — keyed by domain, shared across all items with the same host
+model FaviconCache {
+  domain    String   @id
+  data      Bytes
+  fetchedAt DateTime @default(now())
+}
+
 // AIDEV-NOTE: domain models — List and Item support unicode content (strings or URLs)
 
 model List {
