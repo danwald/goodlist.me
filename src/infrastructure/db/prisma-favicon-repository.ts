@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma"
 import type { FaviconRepository } from "@/domain/repositories"
 
 export class PrismaFaviconRepository implements FaviconRepository {
-  async findByDomain(domain: string): Promise<{ data: Buffer; fetchedAt: Date } | null> {
+  async findByDomain(domain: string): Promise<{ data: Uint8Array<ArrayBuffer>; fetchedAt: Date } | null> {
     const row = await prisma.faviconCache.findUnique({ where: { domain } })
     if (!row) return null
-    return { data: Buffer.from(row.data), fetchedAt: row.fetchedAt }
+    return { data: new Uint8Array(row.data) as Uint8Array<ArrayBuffer>, fetchedAt: row.fetchedAt }
   }
 
-  async upsert(domain: string, data: Buffer): Promise<void> {
+  async upsert(domain: string, data: Uint8Array<ArrayBuffer>): Promise<void> {
     await prisma.faviconCache.upsert({
       where: { domain },
       update: { data, fetchedAt: new Date() },

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { getListRepository } from "@/infrastructure/db"
 import { AddItemForm } from "./add-item-form"
 import { ItemRow } from "./item-row"
+import { RefreshFaviconsButton } from "./refresh-favicons-button"
 import { ShareButton } from "@/components/share-button"
 
 type Props = {
@@ -36,6 +37,7 @@ export default async function ListDetailPage({ params }: Props) {
               <p className="text-sm text-zinc-500 dark:text-zinc-400">{list.description}</p>
             )}
           </div>
+          <RefreshFaviconsButton listId={list.id} />
           {list.isPublic && (
             <ShareButton
               url={`${process.env.NEXTAUTH_URL}/list/${list.id}`}

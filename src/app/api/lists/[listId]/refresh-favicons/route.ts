@@ -38,8 +38,8 @@ export async function POST(_req: Request, context: RouteContext) {
     try {
       const res = await fetch(DDG_URL(domain), { signal: AbortSignal.timeout(3000) })
       if (!res.ok) continue
-      const buffer = Buffer.from(await res.arrayBuffer())
-      await faviconRepo.upsert(domain, buffer)
+      const arrayBuffer = await res.arrayBuffer()
+      await faviconRepo.upsert(domain, new Uint8Array(arrayBuffer) as Uint8Array<ArrayBuffer>)
       refreshed++
     } catch {
       // skip unreachable domains
