@@ -62,9 +62,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const linkedProviders = existingUser.accounts.map((a) => a.provider)
       if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
-        // User exists with different provider(s) — reject and show error
-        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(", ")
-        throw new Error(`email_already_linked:${providerList}`)
+        // User exists with different provider(s) — return error code to redirect to login
+        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
+        return `email_already_linked_${providerList}`
       }
 
       return true

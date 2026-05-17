@@ -13,8 +13,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     const errorParam = searchParams.get("error")
-    if (errorParam?.startsWith("email_already_linked:")) {
-      const providers = errorParam.replace("email_already_linked:", "")
+    if (errorParam?.startsWith("email_already_linked_")) {
+      const providers = errorParam.replace("email_already_linked_", "").replace(/,/g, " or ")
       setError(`An account with this email already exists. Please sign in using ${providers}.`)
     }
   }, [searchParams])
