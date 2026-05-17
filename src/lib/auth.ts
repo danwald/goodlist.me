@@ -13,6 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   providers: [
     Google({
@@ -68,7 +69,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const cookieStore = await cookies()
         cookieStore.set("auth_error", `email_already_linked:${providerList}`, {
           maxAge: 60,
-          httpOnly: true,
         })
         return false
       }
