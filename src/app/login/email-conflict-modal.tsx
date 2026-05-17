@@ -1,28 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-export function EmailConflictModal({
-  providers,
-  conflictId,
-}: {
-  providers: string | null
-  conflictId: string | null
-}) {
+export function EmailConflictModal({ providers }: { providers: string | null }) {
   const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
 
-  useEffect(() => {
-    console.log(`[EmailConflictModal] providers=${providers}, conflictId=${conflictId}`)
-    if (providers && conflictId) {
-      console.log("[EmailConflictModal] Opening modal")
-      setIsOpen(true)
-    }
-  }, [providers, conflictId])
-
-  if (!isOpen || !providers) {
-    console.log(`[EmailConflictModal] Not rendering: isOpen=${isOpen}, providers=${providers}`)
+  if (!providers) {
     return null
   }
 
@@ -35,10 +18,7 @@ export function EmailConflictModal({
           <span className="font-medium">{providers.replace(/,/g, " or ")}</span>.
         </p>
         <button
-          onClick={() => {
-            setIsOpen(false)
-            router.push("/login")
-          }}
+          onClick={() => router.push("/login")}
           className="mt-4 w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           Got it

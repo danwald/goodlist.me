@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs db-migrate db-studio clean
+.PHONY: help build up down restart restart-app logs db-migrate db-studio clean
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -19,6 +19,9 @@ down: ## Stop all services
 
 restart: ## Restart all services
 	docker compose down && docker compose up -d
+
+restart-app: ## Restart app container only
+	docker compose restart app
 
 logs: ## Tail logs from all services
 	docker compose logs -f

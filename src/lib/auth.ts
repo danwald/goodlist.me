@@ -7,15 +7,6 @@ import GitHub from "next-auth/providers/github"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
-// AIDEV-NOTE: store email conflicts temporarily to pass to login page
-const emailConflicts = new Map<string, string>()
-
-export function getEmailConflictError(id: string): string | null {
-  const result = emailConflicts.get(id) || null
-  console.log(`[getEmailConflictError] id=${id}, found=${!!result}, mapSize=${emailConflicts.size}`)
-  return result
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -56,30 +47,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // AIDEV-NOTE: detect email conflicts between OAuth providers
     async signIn({ user, account }) {
+      console.log("[signIn] account?.provider:", account?.provider, "user.email:", user.email)
+
       if (!account || !["google", "github"].includes(account.provider)) {
+        console.log("[signIn] Skipping: no account or not google/github")
         return true
       }
 
-      if (!user.email) return true
+      if (!user.email) {
+        console.log("[signIn] Skipping: no user.email")
+        return true
+      }
 
       const existingUser = await prisma.user.findUnique({
         where: { email: user.email },
         include: { accounts: { select: { provider: true } } },
       })
 
-      if (!existingUser) return true
+      console.log("[signIn] existingUser:", existingUser ? { id: existingUser.id, email: existingUser.email, accountCount: existingUser.accounts.length } : null)
 
-      const linkedProviders = existingUser.accounts.map((a) => a.provider)
-      if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
-        // User exists with different provider(s) — store error and redirect
-        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
-        const errorId = Math.random().toString(36).slice(2, 9)
-        emailConflicts.set(errorId, providerList)
-        // Self-delete after 60 seconds
-        setTimeout(() => emailConflicts.delete(errorId), 60000)
-        return `/login?emailConflict=${errorId}`
+      if (!existingUser) {
+        console.log("[signIn] Skipping: user doesn't exist in DB")
+        return true
       }
 
+      const linkedProviders = existingUser.accounts.map((a) => a.provider)
+      console.log("[signIn] linkedProviders:", linkedProviders, "currentProvider:", account.provider)
+
+      if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
+        // User exists with different provider(s) — pass error in URL
+        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
+        const encodedProviders = encodeURIComponent(providerList)
+        console.log("[signIn] CONFLICT DETECTED! providers:", providerList)
+        return `/login?emailConflict=true&providers=${encodedProviders}`
+      }
+
+      console.log("[signIn] No conflict, allowing sign in")
       return true
     },
     jwt({ token, user }) {

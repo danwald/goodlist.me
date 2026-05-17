@@ -1,14 +1,13 @@
-import { getEmailConflictError } from "@/lib/auth"
 import LoginForm from "./login-form"
 
 type Props = {
-  searchParams: Promise<{ emailConflict?: string }>
+  searchParams: Promise<{ emailConflict?: string; providers?: string }>
 }
 
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams
-  const conflictId = params.emailConflict
-  const providers = conflictId ? getEmailConflictError(conflictId) : null
+  const showConflict = params.emailConflict === "true"
+  const providers = showConflict ? params.providers || null : null
 
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
@@ -20,7 +19,7 @@ export default async function LoginPage({ searchParams }: Props) {
           </p>
         </div>
 
-        <LoginForm providers={providers} conflictId={conflictId} />
+        <LoginForm providers={providers} />
       </div>
     </div>
   )
