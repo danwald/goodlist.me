@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: Props) {
           </p>
         </div>
 
-        <LoginForm providers={providers} />
+        <LoginForm providers={providers} conflictId={conflictId} />
       </div>
     </div>
   )

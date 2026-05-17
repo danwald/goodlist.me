@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { EmailConflictModal } from "./email-conflict-modal"
 
-export default function LoginForm({ providers }: { providers: string | null }) {
+export default function LoginForm({
+  providers,
+  conflictId,
+}: {
+  providers: string | null
+  conflictId: string | null
+}) {
   const router = useRouter()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -35,7 +41,7 @@ export default function LoginForm({ providers }: { providers: string | null }) {
 
   return (
     <>
-      <EmailConflictModal providers={providers} />
+      <EmailConflictModal providers={providers} conflictId={conflictId} />
       <div className="flex flex-col gap-3">
         <button
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}

@@ -1,18 +1,23 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
-export function EmailConflictModal({ providers }: { providers: string | null }) {
+export function EmailConflictModal({
+  providers,
+  conflictId,
+}: {
+  providers: string | null
+  conflictId: string | null
+}) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    if (providers && searchParams.get("emailConflict")) {
+    if (providers && conflictId) {
       setIsOpen(true)
     }
-  }, [providers, searchParams])
+  }, [providers, conflictId])
 
   if (!isOpen || !providers) return null
 
