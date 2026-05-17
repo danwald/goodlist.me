@@ -5,15 +5,20 @@ import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import GitHub from "next-auth/providers/github"
 import bcrypt from "bcryptjs"
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
+
+// AIDEV-NOTE: store email conflicts temporarily to pass to login page
+const emailConflicts = new Map<string, string>()
+
+export function getEmailConflictError(id: string): string | null {
+  return emailConflicts.get(id) || null
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
-    error: "/login",
   },
   providers: [
     Google({
@@ -64,13 +69,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const linkedProviders = existingUser.accounts.map((a) => a.provider)
       if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
-        // User exists with different provider(s) — set cookie and deny signin
+        // User exists with different provider(s) — store error and redirect
         const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
-        const cookieStore = await cookies()
-        cookieStore.set("auth_error", `email_already_linked:${providerList}`, {
-          maxAge: 60,
-        })
-        return false
+        const errorId = Math.random().toString(36).slice(2, 9)
+        emailConflicts.set(errorId, providerList)
+        // Self-delete after 60 seconds
+        setTimeout(() => emailConflicts.delete(errorId), 60000)
+        return `/login?emailConflict=${errorId}`
       }
 
       return true

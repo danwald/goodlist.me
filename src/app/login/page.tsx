@@ -1,33 +1,47 @@
-"use client"
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { getEmailConflictError } from "@/lib/auth"
+import LoginForm from "./login-form"
 
-import { signIn } from "next-auth/react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+async function EmailConflictError({ conflictId }: { conflictId: string }) {
+  const providers = getEmailConflictError(conflictId)
+  if (!providers) return null
+
+  return (
+    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+      An account with this email already exists. Please sign in using {providers.replace(/,/g, " or ")}.
+    </div>
+  )
+}
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const conflictId = searchParams.get("emailConflict")
 
-  useEffect(() => {
-    // Check for auth_error cookie set by signIn callback
-    const cookieValue = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth_error="))
-      ?.split("=")[1]
+  return (
+    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Sign in</h1>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Welcome back to goodlist.me
+          </p>
+        </div>
 
-    if (cookieValue?.startsWith("email_already_linked:")) {
-      const providers = cookieValue
-        .replace("email_already_linked:", "")
-        .split(",")
-        .join(" or ")
-      setError(`An account with this email already exists. Please sign in using ${providers}.`)
+        <div className="flex flex-col gap-3">
+          {conflictId && (
+            <Suspense fallback={<div className="h-10" />}>
+              <EmailConflictError conflictId={conflictId} />
+            </Suspense>
+          )}
+        </div>
 
-      // Clear the cookie
-      document.cookie = "auth_error=; max-age=0"
-    }
-  }, [])
+        <LoginForm />
+      </div>
+    </div>
+  )
+}
+
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
