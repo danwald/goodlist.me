@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import GitHub from "next-auth/providers/github"
 import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -62,9 +63,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const linkedProviders = existingUser.accounts.map((a) => a.provider)
       if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
-        // User exists with different provider(s) — return error code to redirect to login
+        // User exists with different provider(s) — set cookie and deny signin
         const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
-        return `email_already_linked_${providerList}`
+        const cookieStore = await cookies()
+        cookieStore.set("auth_error", `email_already_linked:${providerList}`, {
+          maxAge: 60,
+          httpOnly: true,
+        })
+        return false
       }
 
       return true
