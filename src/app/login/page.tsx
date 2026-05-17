@@ -1,22 +1,14 @@
-import { Suspense } from "react"
-import { useSearchParams } from "next/navigation"
 import { getEmailConflictError } from "@/lib/auth"
 import LoginForm from "./login-form"
 
-async function EmailConflictError({ conflictId }: { conflictId: string }) {
-  const providers = getEmailConflictError(conflictId)
-  if (!providers) return null
-
-  return (
-    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-      An account with this email already exists. Please sign in using {providers.replace(/,/g, " or ")}.
-    </div>
-  )
+type Props = {
+  searchParams: Promise<{ emailConflict?: string }>
 }
 
-export default function LoginPage() {
-  const searchParams = useSearchParams()
-  const conflictId = searchParams.get("emailConflict")
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams
+  const conflictId = params.emailConflict
+  const providers = conflictId ? getEmailConflictError(conflictId) : null
 
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
@@ -28,13 +20,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {conflictId && (
-            <Suspense fallback={<div className="h-10" />}>
-              <EmailConflictError conflictId={conflictId} />
-            </Suspense>
-          )}
-        </div>
+        {providers && (
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            An account with this email already exists. Please sign in using{" "}
+            {providers.replace(/,/g, " or ")}.
+          </div>
+        )}
 
         <LoginForm />
       </div>
