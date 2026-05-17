@@ -73,7 +73,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
         const errorId = Math.random().toString(36).slice(2, 9)
         emailConflicts.set(errorId, providerList)
-        console.log(`[Auth] Email conflict detected: errorId=${errorId}, providers=${providerList}, store size=${emailConflicts.size}`)
         // Self-delete after 60 seconds
         setTimeout(() => emailConflicts.delete(errorId), 60000)
         return `/login?emailConflict=${errorId}`

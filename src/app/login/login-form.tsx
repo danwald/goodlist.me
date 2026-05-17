@@ -4,8 +4,9 @@ import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { EmailConflictModal } from "./email-conflict-modal"
 
-export default function LoginForm() {
+export default function LoginForm({ providers }: { providers: string | null }) {
   const router = useRouter()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -34,6 +35,7 @@ export default function LoginForm() {
 
   return (
     <>
+      <EmailConflictModal providers={providers} />
       <div className="flex flex-col gap-3">
         <button
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}

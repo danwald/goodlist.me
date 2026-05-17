@@ -10,11 +10,6 @@ export default async function LoginPage({ searchParams }: Props) {
   const conflictId = params.emailConflict
   const providers = conflictId ? getEmailConflictError(conflictId) : null
 
-  // AIDEV-NOTE: debug logging for email conflict flow
-  if (conflictId) {
-    console.log(`[Login] conflictId=${conflictId}, providers=${providers}`)
-  }
-
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
       <div className="w-full max-w-sm space-y-6">
@@ -25,14 +20,7 @@ export default async function LoginPage({ searchParams }: Props) {
           </p>
         </div>
 
-        {providers && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            An account with this email already exists. Please sign in using{" "}
-            {providers.replace(/,/g, " or ")}.
-          </div>
-        )}
-
-        <LoginForm />
+        <LoginForm providers={providers} />
       </div>
     </div>
   )
