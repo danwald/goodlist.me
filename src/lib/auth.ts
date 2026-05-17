@@ -11,7 +11,9 @@ import { prisma } from "@/lib/prisma"
 const emailConflicts = new Map<string, string>()
 
 export function getEmailConflictError(id: string): string | null {
-  return emailConflicts.get(id) || null
+  const result = emailConflicts.get(id) || null
+  console.log(`[getEmailConflictError] id=${id}, found=${!!result}, mapSize=${emailConflicts.size}`)
+  return result
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

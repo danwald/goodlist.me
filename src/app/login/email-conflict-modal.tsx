@@ -14,12 +14,17 @@ export function EmailConflictModal({
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
+    console.log(`[EmailConflictModal] providers=${providers}, conflictId=${conflictId}`)
     if (providers && conflictId) {
+      console.log("[EmailConflictModal] Opening modal")
       setIsOpen(true)
     }
   }, [providers, conflictId])
 
-  if (!isOpen || !providers) return null
+  if (!isOpen || !providers) {
+    console.log(`[EmailConflictModal] Not rendering: isOpen=${isOpen}, providers=${providers}`)
+    return null
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
