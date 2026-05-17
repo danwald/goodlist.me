@@ -10,6 +10,11 @@ export default async function LoginPage({ searchParams }: Props) {
   const conflictId = params.emailConflict
   const providers = conflictId ? getEmailConflictError(conflictId) : null
 
+  // AIDEV-NOTE: debug logging for email conflict flow
+  if (conflictId) {
+    console.log(`[Login] conflictId=${conflictId}, providers=${providers}`)
+  }
+
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
       <div className="w-full max-w-sm space-y-6">
