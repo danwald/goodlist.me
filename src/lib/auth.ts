@@ -45,6 +45,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // AIDEV-NOTE: detect email conflicts between OAuth providers
+    async signIn({ user, account }) {
+      if (!account || !["google", "github"].includes(account.provider)) {
+        return true
+      }
+
+      if (!user.email) return true
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        include: { accounts: { select: { provider: true } } },
+      })
+
+      if (!existingUser) return true
+
+      const linkedProviders = existingUser.accounts.map((a) => a.provider)
+      if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
+        // User exists with different provider(s) — reject and show error
+        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(", ")
+        throw new Error(`email_already_linked:${providerList}`)
+      }
+
+      return true
+    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id

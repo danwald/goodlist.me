@@ -2,13 +2,22 @@
 
 import { signIn } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+    if (errorParam?.startsWith("email_already_linked:")) {
+      const providers = errorParam.replace("email_already_linked:", "")
+      setError(`An account with this email already exists. Please sign in using ${providers}.`)
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
