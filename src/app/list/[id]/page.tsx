@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { getListRepository } from "@/infrastructure/db"
 import type { Item } from "@/types"
+import { MarkdownContent } from "@/components/markdown-content"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -55,7 +56,10 @@ export default async function PublicListPage({ params }: Props) {
                     {item.content}
                   </a>
                 ) : (
-                  <span className="text-sm text-zinc-900 dark:text-zinc-50">{item.content}</span>
+                  <MarkdownContent
+                    content={item.content}
+                    className="text-sm text-zinc-900 dark:text-zinc-50"
+                  />
                 )}
               </li>
             ))}

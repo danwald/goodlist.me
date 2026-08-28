@@ -13,8 +13,10 @@ export function AddItemForm({ listId }: { listId: string }) {
     if (!content.trim()) return
     setLoading(true)
 
-    // AIDEV-NOTE: auto-detect URLs in content
-    const isUrl = /^https?:\/\//i.test(content.trim())
+    // AIDEV-NOTE: auto-detect URLs in content — must match the ENTIRE trimmed string (no
+    // trailing whitespace-separated text), otherwise "https://x.com some notes" would set
+    // item.url to the whole string, breaking href/favicon lookups downstream.
+    const isUrl = /^https?:\/\/\S+$/i.test(content.trim())
 
     await fetch(`/api/lists/${listId}/items`, {
       method: "POST",

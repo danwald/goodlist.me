@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import type { Item } from "@/types"
+import { MarkdownContent } from "@/components/markdown-content"
 
 export function ItemRow({ item }: { item: Item }) {
   const router = useRouter()
@@ -37,7 +38,10 @@ export function ItemRow({ item }: { item: Item }) {
             {item.content}
           </a>
         ) : (
-          <span className="truncate text-sm text-zinc-900 dark:text-zinc-50">{item.content}</span>
+          <MarkdownContent
+            content={item.content}
+            className="truncate text-sm text-zinc-900 dark:text-zinc-50"
+          />
         )}
       </div>
       <button
