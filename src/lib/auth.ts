@@ -1,5 +1,5 @@
 // AIDEV-NOTE: NextAuth config — credentials (email/password) + Google + GitHub OAuth
-import NextAuth from "next-auth"
+import NextAuth, { type NextAuthConfig } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
@@ -7,7 +7,10 @@ import GitHub from "next-auth/providers/github"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+// AIDEV-NOTE: config is extracted to a named, exported constant (rather than being
+// passed inline to NextAuth()) so unit tests can import `authConfig.callbacks.signIn`
+// directly without going through the full NextAuth() request-handling machinery.
+export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
@@ -47,15 +50,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // AIDEV-NOTE: detect email conflicts between OAuth providers
     async signIn({ user, account }) {
-      console.log("[signIn] account?.provider:", account?.provider, "user.email:", user.email)
-
       if (!account || !["google", "github"].includes(account.provider)) {
-        console.log("[signIn] Skipping: no account or not google/github")
         return true
       }
 
       if (!user.email) {
-        console.log("[signIn] Skipping: no user.email")
         return true
       }
 
@@ -64,25 +63,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         include: { accounts: { select: { provider: true } } },
       })
 
-      console.log("[signIn] existingUser:", existingUser ? { id: existingUser.id, email: existingUser.email, accountCount: existingUser.accounts.length } : null)
-
       if (!existingUser) {
-        console.log("[signIn] Skipping: user doesn't exist in DB")
         return true
       }
 
       const linkedProviders = existingUser.accounts.map((a) => a.provider)
-      console.log("[signIn] linkedProviders:", linkedProviders, "currentProvider:", account.provider)
 
       if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
         // User exists with different provider(s) — pass error in URL
         const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
         const encodedProviders = encodeURIComponent(providerList)
-        console.log("[signIn] CONFLICT DETECTED! providers:", providerList)
         return `/login?emailConflict=true&providers=${encodedProviders}`
       }
 
-      console.log("[signIn] No conflict, allowing sign in")
       return true
     },
     jwt({ token, user }) {
@@ -98,4 +91,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
   },
-})
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
