@@ -4,7 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths"
 import { defineConfig } from "vitest/config"
 
 // AIDEV-NOTE: coverage.include is intentionally scoped to critical-logic files only
-// (auth signIn callback, utils, Prisma repository adapters, DI factory). App Router
+// (auth config, utils, Prisma repository adapters, DI factory). App Router
 // pages/routes (src/app/**) are out of scope for this pass — see AGENTS.md.
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],

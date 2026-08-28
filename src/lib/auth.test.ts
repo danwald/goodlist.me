@@ -1,9 +1,8 @@
-// AIDEV-NOTE: unit tests for the signIn callback's email-conflict detection logic.
-// @/lib/prisma is mocked so no real DB is hit; we import the NextAuth config object
-// directly and invoke callbacks.signIn with constructed user/account objects.
-import { beforeEach, describe, expect, it, vi } from "vitest"
+// AIDEV-NOTE: unit tests for auth.ts's provider config and callbacks. @/lib/prisma is
+// mocked so no real DB is hit; we import the NextAuth config object directly.
+import { describe, expect, it, vi } from "vitest"
 import type { Mock } from "vitest"
-import type { Account, User } from "next-auth"
+import type { User } from "next-auth"
 import type { AdapterUser } from "next-auth/adapters"
 
 vi.mock("@/lib/prisma", () => ({
@@ -25,9 +24,6 @@ const { authConfig } = await import("@/lib/auth")
 const { prisma } = await import("@/lib/prisma")
 const bcrypt = (await import("bcryptjs")).default
 
-const signIn = authConfig.callbacks?.signIn
-if (!signIn) throw new Error("signIn callback not configured")
-
 const jwtCallback = authConfig.callbacks?.jwt
 if (!jwtCallback) throw new Error("jwt callback not configured")
 
@@ -43,9 +39,6 @@ const authorize = credentialsProvider.options.authorize
 if (!authorize) throw new Error("authorize not configured")
 
 const findUniqueMock = vi.mocked(prisma.user.findUnique)
-// AIDEV-NOTE: bcryptjs's `compare` is overloaded (async-Promise vs callback-based,
-// the latter returning void); vi.mocked() resolves to the void-returning overload,
-// so we cast directly to the async signature we actually mock and use here.
 const compareMock = bcrypt.compare as unknown as Mock<(password: string, hash: string) => Promise<boolean>>
 
 function makeUser(overrides: Partial<User | AdapterUser> = {}): User {
@@ -58,132 +51,26 @@ function makeUser(overrides: Partial<User | AdapterUser> = {}): User {
   } as User
 }
 
-function makeAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    provider: "google",
-    type: "oauth",
-    providerAccountId: "google-account-id",
-    ...overrides,
-  } as Account
-}
+describe("auth.ts provider config", () => {
+  // AIDEV-NOTE: same email should map to the same application User across all auth
+  // mechanisms — verifies the providers opt in to Auth.js's email-based account linking
+  // (see the AIDEV-NOTE above the providers array in auth.ts for the security rationale).
+  type ProviderWithOptions = { options: { allowDangerousEmailAccountLinking?: boolean } }
 
-describe("auth.ts signIn callback", () => {
-  beforeEach(() => {
-    findUniqueMock.mockReset()
+  it("enables allowDangerousEmailAccountLinking on the google provider", () => {
+    const google = authConfig.providers.find((p) => "id" in p && p.id === "google")
+    expect(google).toBeDefined()
+    expect((google as unknown as ProviderWithOptions).options.allowDangerousEmailAccountLinking).toBe(true)
   })
 
-  it("allows sign-in when there is no account (e.g. credentials sign-in)", async () => {
-    const result = await signIn({
-      user: makeUser(),
-      account: null,
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-    expect(findUniqueMock).not.toHaveBeenCalled()
-  })
-
-  it("allows sign-in when the account provider is not google/github", async () => {
-    const result = await signIn({
-      user: makeUser(),
-      account: makeAccount({ provider: "credentials" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-    expect(findUniqueMock).not.toHaveBeenCalled()
-  })
-
-  it("allows sign-in when the OAuth user has no email", async () => {
-    const result = await signIn({
-      user: makeUser({ email: undefined }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-    expect(findUniqueMock).not.toHaveBeenCalled()
-  })
-
-  it("allows sign-in when the user does not exist yet in the DB", async () => {
-    findUniqueMock.mockResolvedValueOnce(null)
-
-    const result = await signIn({
-      user: makeUser({ email: "new@example.com" }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-    expect(findUniqueMock).toHaveBeenCalledWith({
-      where: { email: "new@example.com" },
-      include: { accounts: { select: { provider: true } } },
-    })
-  })
-
-  it("allows sign-in when the existing user already has this provider linked", async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      id: "user-1",
-      email: "person@example.com",
-      accounts: [{ provider: "google" }],
-    } as never)
-
-    const result = await signIn({
-      user: makeUser({ email: "person@example.com" }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-  })
-
-  it("allows sign-in when the existing user has no linked accounts at all", async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      id: "user-1",
-      email: "person@example.com",
-      accounts: [],
-    } as never)
-
-    const result = await signIn({
-      user: makeUser({ email: "person@example.com" }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(true)
-  })
-
-  it("redirects with a capitalized, url-encoded conflict when a different single provider is linked", async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      id: "user-1",
-      email: "person@example.com",
-      accounts: [{ provider: "github" }],
-    } as never)
-
-    const result = await signIn({
-      user: makeUser({ email: "person@example.com" }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe("/login?emailConflict=true&providers=Github")
-  })
-
-  it("lists multiple linked providers, comma-separated and capitalized", async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      id: "user-1",
-      email: "person@example.com",
-      accounts: [{ provider: "github" }, { provider: "credentials" }],
-    } as never)
-
-    const result = await signIn({
-      user: makeUser({ email: "person@example.com" }),
-      account: makeAccount({ provider: "google" }),
-    } as Parameters<typeof signIn>[0])
-
-    expect(result).toBe(`/login?emailConflict=true&providers=${encodeURIComponent("Github,Credentials")}`)
+  it("enables allowDangerousEmailAccountLinking on the github provider", () => {
+    const github = authConfig.providers.find((p) => "id" in p && p.id === "github")
+    expect(github).toBeDefined()
+    expect((github as unknown as ProviderWithOptions).options.allowDangerousEmailAccountLinking).toBe(true)
   })
 })
 
 describe("auth.ts credentials authorize", () => {
-  beforeEach(() => {
-    findUniqueMock.mockReset()
-    compareMock.mockReset()
-  })
-
   it("returns null when email or password is missing", async () => {
     expect(await authorize({ email: "", password: "pw" })).toBeNull()
     expect(await authorize({ password: "pw" })).toBeNull()
