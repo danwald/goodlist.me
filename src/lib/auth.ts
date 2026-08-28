@@ -1,5 +1,7 @@
-// AIDEV-NOTE: NextAuth config — credentials (email/password) + Google + GitHub OAuth
-import NextAuth from "next-auth"
+// AIDEV-NOTE: NextAuth config — credentials (email/password) + Google + GitHub OAuth.
+// config is extracted to a named, exported constant (rather than passed inline to
+// NextAuth()) so unit tests can import `authConfig` directly.
+import NextAuth, { type NextAuthConfig } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
@@ -7,20 +9,33 @@ import GitHub from "next-auth/providers/github"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
   },
   providers: [
+    // AIDEV-NOTE: allowDangerousEmailAccountLinking maps a sign-in to the existing User
+    // row with the same email (whether that user was created via credentials or the other
+    // OAuth provider) instead of Auth.js's default OAuthAccountNotLinked error — see
+    // node_modules/@auth/core/lib/actions/callback/handle-login.js. Auth.js calls this
+    // "dangerous" because it trusts the provider's email claim without re-verifying it here;
+    // we accept that because completing a real OAuth flow with a provider is itself proof of
+    // control over that email address (both Google and GitHub verify email ownership before
+    // issuing it via OAuth). This is intentionally one-directional: it does NOT extend to the
+    // credentials registration form (see src/app/api/register/route.ts), because typing an
+    // email into a form proves nothing about who controls it — auto-attaching a password to
+    // someone else's existing OAuth account that way would be an account-takeover vector.
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: "credentials",
@@ -45,46 +60,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    // AIDEV-NOTE: detect email conflicts between OAuth providers
-    async signIn({ user, account }) {
-      console.log("[signIn] account?.provider:", account?.provider, "user.email:", user.email)
-
-      if (!account || !["google", "github"].includes(account.provider)) {
-        console.log("[signIn] Skipping: no account or not google/github")
-        return true
-      }
-
-      if (!user.email) {
-        console.log("[signIn] Skipping: no user.email")
-        return true
-      }
-
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email },
-        include: { accounts: { select: { provider: true } } },
-      })
-
-      console.log("[signIn] existingUser:", existingUser ? { id: existingUser.id, email: existingUser.email, accountCount: existingUser.accounts.length } : null)
-
-      if (!existingUser) {
-        console.log("[signIn] Skipping: user doesn't exist in DB")
-        return true
-      }
-
-      const linkedProviders = existingUser.accounts.map((a) => a.provider)
-      console.log("[signIn] linkedProviders:", linkedProviders, "currentProvider:", account.provider)
-
-      if (linkedProviders.length > 0 && !linkedProviders.includes(account.provider)) {
-        // User exists with different provider(s) — pass error in URL
-        const providerList = linkedProviders.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(",")
-        const encodedProviders = encodeURIComponent(providerList)
-        console.log("[signIn] CONFLICT DETECTED! providers:", providerList)
-        return `/login?emailConflict=true&providers=${encodedProviders}`
-      }
-
-      console.log("[signIn] No conflict, allowing sign in")
-      return true
-    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id
@@ -98,4 +73,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
   },
-})
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
