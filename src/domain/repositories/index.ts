@@ -1,3 +1,5 @@
 export type { ListRepository } from "./list-repository"
+export { DEFAULT_LIST_PAGE_SIZE } from "./list-repository"
 export type { ItemRepository } from "./item-repository"
+export { DEFAULT_ITEM_PAGE_SIZE } from "./item-repository"
 export type { FaviconRepository } from "./favicon-repository"

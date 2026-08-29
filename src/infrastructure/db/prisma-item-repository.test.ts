@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
     item: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -35,7 +36,7 @@ describe("PrismaItemRepository", () => {
     expect(result).toBe(item)
   })
 
-  it("findAllByList queries by listId ordered by position", async () => {
+  it("findAllByList queries by listId ordered by position, unbounded", async () => {
     const items = [{ id: "item-1" }, { id: "item-2" }]
     vi.mocked(prisma.item.findMany).mockResolvedValueOnce(items as never)
 
@@ -46,6 +47,53 @@ describe("PrismaItemRepository", () => {
       orderBy: { position: "asc" },
     })
     expect(result).toBe(items)
+  })
+
+  it("findPageByList queries by listId ordered by position, paginated with defaults", async () => {
+    const items = [{ id: "item-1" }]
+    vi.mocked(prisma.item.findMany).mockResolvedValueOnce(items as never)
+    vi.mocked(prisma.item.count).mockResolvedValueOnce(1 as never)
+
+    const result = await repo.findPageByList("list-1")
+
+    expect(prisma.item.findMany).toHaveBeenCalledWith({
+      where: { listId: "list-1" },
+      orderBy: { position: "asc" },
+      skip: 0,
+      take: 50,
+    })
+    expect(prisma.item.count).toHaveBeenCalledWith({ where: { listId: "list-1" } })
+    expect(result).toEqual({ items, total: 1 })
+  })
+
+  it("findPageByList applies page/pageSize to skip/take", async () => {
+    const items = [{ id: "item-101" }]
+    vi.mocked(prisma.item.findMany).mockResolvedValueOnce(items as never)
+    vi.mocked(prisma.item.count).mockResolvedValueOnce(1000 as never)
+
+    const result = await repo.findPageByList("list-1", { page: 3, pageSize: 50 })
+
+    expect(prisma.item.findMany).toHaveBeenCalledWith({
+      where: { listId: "list-1" },
+      orderBy: { position: "asc" },
+      skip: 100,
+      take: 50,
+    })
+    expect(result).toEqual({ items, total: 1000 })
+  })
+
+  it("findPageByList clamps page/pageSize below 1 up to 1", async () => {
+    vi.mocked(prisma.item.findMany).mockResolvedValueOnce([] as never)
+    vi.mocked(prisma.item.count).mockResolvedValueOnce(0 as never)
+
+    await repo.findPageByList("list-1", { page: -1, pageSize: 0 })
+
+    expect(prisma.item.findMany).toHaveBeenCalledWith({
+      where: { listId: "list-1" },
+      orderBy: { position: "asc" },
+      skip: 0,
+      take: 1,
+    })
   })
 
   it("create merges listId into the input data", async () => {

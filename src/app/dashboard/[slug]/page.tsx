@@ -1,25 +1,35 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
-import { getListRepository } from "@/infrastructure/db"
+import { getItemRepository, getListRepository } from "@/infrastructure/db"
+import { DEFAULT_ITEM_PAGE_SIZE } from "@/domain/repositories"
 import { AddItemForm } from "./add-item-form"
 import { ItemRow } from "./item-row"
 import { RefreshFaviconsButton } from "./refresh-favicons-button"
 import { ShareButton } from "@/components/share-button"
+import { Pagination } from "@/components/pagination"
 
 type Props = {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string }>
 }
 
-export default async function ListDetailPage({ params }: Props) {
+export default async function ListDetailPage({ params, searchParams }: Props) {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
   const { slug } = await params
+  const searchParamsResolved = await searchParams
+  const page = Math.max(1, Number(searchParamsResolved.page) || 1)
+
   const listRepo = getListRepository()
   const list = await listRepo.findByOwnerAndSlug(session.user.id, slug)
 
   if (!list) redirect("/dashboard")
+
+  const itemRepo = getItemRepository()
+  const { items, total } = await itemRepo.findPageByList(list.id, { page })
+  const totalPages = Math.max(1, Math.ceil(total / DEFAULT_ITEM_PAGE_SIZE))
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
@@ -49,7 +59,7 @@ export default async function ListDetailPage({ params }: Props) {
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
         <AddItemForm listId={list.id} />
 
-        {list.items.length === 0 ? (
+        {items.length === 0 ? (
           <div className="mt-6 rounded-lg border border-dashed border-zinc-300 p-12 text-center dark:border-zinc-700">
             <p className="text-zinc-500 dark:text-zinc-400">
               No items yet. Add your first one above!
@@ -57,11 +67,13 @@ export default async function ListDetailPage({ params }: Props) {
           </div>
         ) : (
           <ul className="mt-6 space-y-2">
-            {list.items.map((item) => (
+            {items.map((item) => (
               <ItemRow key={item.id} item={item} />
             ))}
           </ul>
         )}
+
+        <Pagination basePath={`/dashboard/${slug}`} page={page} totalPages={totalPages} />
       </main>
     </div>
   )

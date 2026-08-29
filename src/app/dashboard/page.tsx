@@ -2,13 +2,23 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { auth, signOut } from "@/lib/auth"
 import { getListRepository } from "@/infrastructure/db"
+import { DEFAULT_LIST_PAGE_SIZE } from "@/domain/repositories"
+import { Pagination } from "@/components/pagination"
 
-export default async function DashboardPage() {
+type Props = {
+  searchParams: Promise<{ page?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: Props) {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
+  const params = await searchParams
+  const page = Math.max(1, Number(params.page) || 1)
+
   const listRepo = getListRepository()
-  const lists = await listRepo.findAllByOwner(session.user.id)
+  const { lists, total } = await listRepo.findAllByOwner(session.user.id, { page })
+  const totalPages = Math.max(1, Math.ceil(total / DEFAULT_LIST_PAGE_SIZE))
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
@@ -76,6 +86,8 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
+
+        <Pagination basePath="/dashboard" page={page} totalPages={totalPages} />
       </main>
     </div>
   )

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getFaviconRepository, getListRepository } from "@/infrastructure/db"
+import { getFaviconRepository, getItemRepository, getListRepository } from "@/infrastructure/db"
 
 type RouteContext = {
   params: Promise<{ listId: string }>
@@ -41,7 +41,12 @@ export async function POST(_req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  const domains = [...new Set(list.items.flatMap((item) => extractHostnames(item.content)))]
+  // AIDEV-NOTE: this bulk job needs every item in the list (not just one page),
+  // so it uses the unbounded findAllByList — findById no longer eagerly includes items.
+  const itemRepo = getItemRepository()
+  const items = await itemRepo.findAllByList(listId)
+
+  const domains = [...new Set(items.flatMap((item) => extractHostnames(item.content)))]
 
   const faviconRepo = getFaviconRepository()
   let refreshed = 0
