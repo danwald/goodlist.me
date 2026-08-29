@@ -27,7 +27,6 @@ export type ListWithItems = List & {
 export type Item = {
   id: string
   content: string
-  url: string | null
   position: number
   listId: string
   createdAt: Date
@@ -50,12 +49,10 @@ export type UpdateListInput = {
 
 export type CreateItemInput = {
   content: string
-  url?: string
   position?: number
 }
 
 export type UpdateItemInput = {
   content?: string
-  url?: string | null
   position?: number
 }

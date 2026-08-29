@@ -46,21 +46,10 @@ export default async function PublicListPage({ params }: Props) {
                 key={item.id}
                 className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
               >
-                {item.url ? (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    {item.content}
-                  </a>
-                ) : (
-                  <MarkdownContent
-                    content={item.content}
-                    className="text-sm text-zinc-900 dark:text-zinc-50"
-                  />
-                )}
+                <MarkdownContent
+                  content={item.content}
+                  className="text-sm text-zinc-900 dark:text-zinc-50"
+                />
               </li>
             ))}
           </ul>

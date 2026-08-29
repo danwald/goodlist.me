@@ -40,7 +40,6 @@ export function getApiDocs() {
             properties: {
               id: { type: "string", example: "cm789ghi" },
               content: { type: "string", example: "The Pragmatic Programmer" },
-              url: { type: "string", nullable: true, example: "https://pragprog.com" },
               position: { type: "integer", example: 0 },
               listId: { type: "string", example: "cm123abc" },
               createdAt: { type: "string", format: "date-time" },

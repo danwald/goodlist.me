@@ -8,6 +8,24 @@ type RouteContext = {
 
 const DDG_URL = (domain: string) => `https://icons.duckduckgo.com/ip3/${domain}.ico`
 
+// AIDEV-NOTE: item content is markdown source (see MarkdownContent) — both bracket-syntax
+// links and bare autolinked URLs embed the literal URL substring in the raw text, so a
+// regex scan is sufficient here without a full markdown parse. This is just a cache-warming
+// optimization (GET /api/favicon/[domain] already fetches+caches lazily on miss), so
+// approximate extraction is fine.
+const URL_PATTERN = /https?:\/\/[^\s)"'<>]+/g
+
+function extractHostnames(content: string): string[] {
+  const matches = content.match(URL_PATTERN) ?? []
+  return matches.flatMap((raw) => {
+    try {
+      return [new URL(raw).hostname]
+    } catch {
+      return []
+    }
+  })
+}
+
 // AIDEV-NOTE: authenticated — only list owner can trigger a bulk favicon refresh
 export async function POST(_req: Request, context: RouteContext) {
   const session = await auth()
@@ -23,13 +41,7 @@ export async function POST(_req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  const domains = [
-    ...new Set(
-      list.items
-        .filter((item) => item.url)
-        .map((item) => new URL(item.url!).hostname)
-    ),
-  ]
+  const domains = [...new Set(list.items.flatMap((item) => extractHostnames(item.content)))]
 
   const faviconRepo = getFaviconRepository()
   let refreshed = 0

@@ -26,11 +26,6 @@
  *                 minLength: 1
  *                 maxLength: 2000
  *                 example: The Pragmatic Programmer
- *               url:
- *                 type: string
- *                 format: uri
- *                 maxLength: 2000
- *                 example: https://pragprog.com
  *     responses:
  *       201:
  *         description: Item created
@@ -64,7 +59,6 @@ import { getItemRepository, getListRepository } from "@/infrastructure/db"
 
 const createItemSchema = z.object({
   content: z.string().min(1).max(2000),
-  url: z.string().url().max(2000).optional(),
 })
 
 type RouteContext = {

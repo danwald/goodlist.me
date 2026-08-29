@@ -15,34 +15,10 @@ export function ItemRow({ item }: { item: Item }) {
   return (
     <li className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        {item.url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/favicon/${new URL(item.url).hostname}`}
-            alt=""
-            width={16}
-            height={16}
-            className="shrink-0"
-            onError={(e) => {
-              ;(e.target as HTMLImageElement).style.display = "none"
-            }}
-          />
-        )}
-        {item.url ? (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="truncate text-sm text-blue-600 hover:underline dark:text-blue-400"
-          >
-            {item.content}
-          </a>
-        ) : (
-          <MarkdownContent
-            content={item.content}
-            className="truncate text-sm text-zinc-900 dark:text-zinc-50"
-          />
-        )}
+        <MarkdownContent
+          content={item.content}
+          className="truncate text-sm text-zinc-900 dark:text-zinc-50"
+        />
       </div>
       <button
         onClick={handleDelete}
