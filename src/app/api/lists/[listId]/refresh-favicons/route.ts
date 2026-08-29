@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getFaviconRepository, getListRepository } from "@/infrastructure/db"
+import { getFaviconRepository, getItemRepository, getListRepository } from "@/infrastructure/db"
 
 type RouteContext = {
   params: Promise<{ listId: string }>
@@ -23,9 +23,14 @@ export async function POST(_req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
+  // AIDEV-NOTE: this bulk job needs every item in the list (not just one page),
+  // so it uses the unbounded findAllByList — findById no longer eagerly includes items.
+  const itemRepo = getItemRepository()
+  const items = await itemRepo.findAllByList(listId)
+
   const domains = [
     ...new Set(
-      list.items
+      items
         .filter((item) => item.url)
         .map((item) => new URL(item.url!).hostname)
     ),

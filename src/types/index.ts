@@ -20,8 +20,16 @@ export type List = {
   updatedAt: Date
 }
 
-export type ListWithItems = List & {
+// AIDEV-NOTE: pagination envelopes — plain domain shapes (no Prisma skip/take leakage here,
+// that stays inside the infrastructure layer per the port/adapter split).
+export type PaginatedLists = {
+  lists: List[]
+  total: number
+}
+
+export type PaginatedItems = {
   items: Item[]
+  total: number
 }
 
 export type Item = {

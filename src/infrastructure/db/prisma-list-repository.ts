@@ -1,28 +1,40 @@
 // AIDEV-NOTE: infrastructure adapter — implements ListRepository port using Prisma
 import { prisma } from "@/lib/prisma"
-import type { CreateListInput, List, ListWithItems, UpdateListInput } from "@/types"
+import type { CreateListInput, List, PaginatedLists, UpdateListInput } from "@/types"
 import type { ListRepository } from "@/domain/repositories"
+import { DEFAULT_LIST_PAGE_SIZE } from "@/domain/repositories/list-repository"
 
 export class PrismaListRepository implements ListRepository {
-  async findById(id: string): Promise<ListWithItems | null> {
+  async findById(id: string): Promise<List | null> {
     return prisma.list.findUnique({
       where: { id },
-      include: { items: { orderBy: { position: "asc" } } },
     })
   }
 
-  async findByOwnerAndSlug(ownerId: string, slug: string): Promise<ListWithItems | null> {
+  async findByOwnerAndSlug(ownerId: string, slug: string): Promise<List | null> {
     return prisma.list.findUnique({
       where: { ownerId_slug: { ownerId, slug } },
-      include: { items: { orderBy: { position: "asc" } } },
     })
   }
 
-  async findAllByOwner(ownerId: string): Promise<List[]> {
-    return prisma.list.findMany({
-      where: { ownerId },
-      orderBy: { updatedAt: "desc" },
-    })
+  async findAllByOwner(
+    ownerId: string,
+    params?: { page?: number; pageSize?: number },
+  ): Promise<PaginatedLists> {
+    const page = Math.max(1, params?.page ?? 1)
+    const pageSize = Math.max(1, params?.pageSize ?? DEFAULT_LIST_PAGE_SIZE)
+
+    const [lists, total] = await Promise.all([
+      prisma.list.findMany({
+        where: { ownerId },
+        orderBy: { updatedAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.list.count({ where: { ownerId } }),
+    ])
+
+    return { lists, total }
   }
 
   async create(ownerId: string, data: CreateListInput): Promise<List> {

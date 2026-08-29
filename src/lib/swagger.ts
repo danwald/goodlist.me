@@ -47,6 +47,30 @@ export function getApiDocs() {
               updatedAt: { type: "string", format: "date-time" },
             },
           },
+          // AIDEV-NOTE: a List plus one paginated page of its items — returned by
+          // GET /api/lists/{listId}. Keep in sync with that route's response shape.
+          ListPage: {
+            type: "object",
+            allOf: [
+              { $ref: "#/components/schemas/List" },
+              {
+                type: "object",
+                properties: {
+                  items: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/Item" },
+                  },
+                  page: { type: "integer", example: 1, description: "1-indexed current page" },
+                  pageSize: { type: "integer", example: 50 },
+                  total: {
+                    type: "integer",
+                    example: 1000,
+                    description: "Total number of items in the list, across all pages",
+                  },
+                },
+              },
+            ],
+          },
           Error: {
             type: "object",
             properties: {
