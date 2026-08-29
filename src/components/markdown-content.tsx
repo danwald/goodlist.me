@@ -13,12 +13,49 @@ import remarkGfm from "remark-gfm"
 // utility overrides on the rendered children, keeping everything visually inline/compact.
 // No @tailwindcss/typography in package.json, so this is done manually rather than pulling
 // in a new dependency.
+// AIDEV-NOTE: extracts a hostname for the favicon endpoint only for http(s) links —
+// react-markdown's default urlTransform already strips dangerous schemes (javascript:
+// etc.), but mailto:/tel:/relative/malformed hrefs are still possible from user-authored
+// markdown and `new URL()` throws on those, so this stays defensive.
+function faviconHostname(href?: string): string | null {
+  if (!href) return null
+  try {
+    const url = new URL(href)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    return url.hostname
+  } catch {
+    return null
+  }
+}
+
 const components: Components = {
-  a: ({ children, ...props }) => (
-    <a {...props} target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  ),
+  a: ({ children, href, ...props }) => {
+    const hostname = faviconHostname(href)
+    return (
+      <a
+        {...props}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1"
+      >
+        {hostname && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/favicon/${hostname}`}
+            alt=""
+            width={14}
+            height={14}
+            className="inline-block shrink-0"
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).style.display = "none"
+            }}
+          />
+        )}
+        {children}
+      </a>
+    )
+  },
   p: ({ children }) => <span className="m-0">{children}</span>,
   ul: ({ children }) => <span className="m-0 inline">{children}</span>,
   ol: ({ children }) => <span className="m-0 inline">{children}</span>,
